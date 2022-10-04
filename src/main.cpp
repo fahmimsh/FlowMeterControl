@@ -24,13 +24,13 @@ enum{
   REG5,//reg 5
   REG_setpoint_data1,//reg 6
   REG7,//reg 7
-  REG_currentliter1,//reg 16
-  REG9,//reg 17
-  REG_onMotor1,//reg 20
+  REG_currentliter1,//reg 8
+  REG9,//reg 9
+  REG_onMotor1,//reg 10
   HOLDING_REGS_SIZE
 };
 uint16_t holdingRegs[HOLDING_REGS_SIZE];
-FlowSensorProperties SEA_YF_DN50_FL1 = {500.0f, 1.0f, {1,1,1,1,1,1,1,1,1,1}};
+FlowSensorProperties SEA_YF_DN50_FL1 = {500.0f, 1.0f, {1,1,1,1,1,1,1,1,1,1}}; //0.1
 FlowMeter *FLMeter1;
 EasyNex nextion(Serial);
 Modbus slave(ID_SLAVE, Serial2, 0);
@@ -48,7 +48,8 @@ double totalofliter1 = 0.0;
 float totalofcubic1 = 0.0;
 float setpoint_fl1 = 300.0;
 
-uint8_t mode_fl1 = 0;
+
+uint8_t mode_fl1 = 0, mode_fl1_prev = 0;
 uint8_t addr_totalliter1 = 0;
 
 IRAM_ATTR void handleInterrupt1();
@@ -83,7 +84,7 @@ void loop() {
   if(Serial2.available() > 0){
     nextion.writeStr("t3.txt", "ON");
     nextion.writeNum("r0.val", 1);
-    setpoint_fl1 = modbus_16bit_register_pair_to_float(holdingRegs[REG_setpoint_data1], holdingRegs[REG_setpoint_data1 + 1]);
+    setpoint_fl1 = modbus_16bit_register_pair_to_float(holdingRegs[REG_setpoint_data1], holdingRegs[REG7]);
     slave.poll(holdingRegs, HOLDING_REGS_SIZE);
   }else{
     nextion.writeStr("t3.txt", "OFF");
@@ -117,7 +118,9 @@ void loop() {
   if (digitalRead(X4) == OFF && digitalRead(X6) == OFF && mode_fl1 != manual){mode_fl1 = manual; nextion.writeStr("t31.txt", "Manual");}
   if(digitalRead(X4) == ON && digitalRead(X6) == OFF && mode_fl1 != otomatis){mode_fl1 = otomatis; nextion.writeStr("t31.txt", "Auto");}
   if(digitalRead(X4) == OFF && digitalRead(X6) == ON && mode_fl1 != setting){mode_fl1 = setting; nextion.writeStr("t31.txt", "Setting");}
-
+  if(mode_fl1 != mode_fl1_prev){
+    mode_fl1_prev  = mode_fl1;
+  }
   if(mode_fl1 != setting){
     if(digitalRead(X2) == ON && millis() - time_button_fl1 >= 1000){
       time_button_fl1 = millis();
